@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PolyClinic Practitioner Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+   
+    /* Animation for list items */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+  </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Top Navigation -->
+  <nav class="bg-indigo-900 border-b border-indigo-800 sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-500 p-2 rounded-lg text-white shadow-inner">
+          <i data-lucide="stethoscope" class="w-5 h-5"></i>
+        </div>
+        <span class="text-lg font-bold text-white tracking-tight">PolyClinic <span class="text-indigo-300 font-medium">Practitioner</span></span>
+      </div>
+     
+      <div class="flex items-center gap-4">
+        <div id="loading-indicator" class="flex items-center gap-2 text-indigo-200 bg-indigo-800/50 px-3 py-1.5 rounded-full font-medium text-xs border border-indigo-700 hidden">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+          </span>
+          Syncing...
+        </div>
+       
+        <!-- Practitioner Selector (Simulated Login) -->
+        <select id="practitioner-select" onchange="loadDoctorSchedule()" class="bg-indigo-950 text-indigo-100 border border-indigo-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer shadow-sm">
+          <option value="">Select Practitioner Profile...</option>
+        </select>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 lg:p-8 space-y-6">
+   
+    <!-- Welcome Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900" id="welcome-text">Welcome, Practitioner</h1>
+        <p class="text-slate-500 text-sm mt-1">Here is your schedule and patient itinerary.</p>
+      </div>
+      <button onclick="loadDoctorSchedule()" class="whitespace-nowrap px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-lg border border-slate-200 shadow-sm flex items-center gap-2 transition-colors">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh Agenda
+      </button>
+    </div>
+
+    <!-- Stats Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-lg"><i data-lucide="calendar-check" class="w-6 h-6"></i></div>
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Today's Patients</p>
+          <h3 class="text-2xl font-bold text-slate-800" id="stat-today">0</h3>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg"><i data-lucide="calendar-clock" class="w-6 h-6"></i></div>
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Upcoming Booked</p>
+          <h3 class="text-2xl font-bold text-slate-800" id="stat-upcoming">0</h3>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="p-3 bg-amber-50 text-amber-600 rounded-lg"><i data-lucide="hourglass" class="w-6 h-6"></i></div>
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Approvals</p>
+          <h3 class="text-2xl font-bold text-slate-800" id="stat-pending">0</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agenda Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+     
+      <!-- Today's Agenda -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+          <i data-lucide="calendar-range" class="w-5 h-5 text-indigo-600"></i>
+          <h2 class="text-lg font-bold text-slate-900">Today's Itinerary</h2>
+        </div>
+        <div class="p-4 space-y-3 custom-scrollbar overflow-y-auto max-h-[500px]" id="today-agenda">
+          <div class="text-center py-10 text-slate-400 text-sm">Select a practitioner to view itinerary.</div>
+        </div>
+      </div>
+
+      <!-- Upcoming Agenda -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+          <i data-lucide="calendar-days" class="w-5 h-5 text-indigo-600"></i>
+          <h2 class="text-lg font-bold text-slate-900">Upcoming & Pending</h2>
+        </div>
+        <div class="p-4 space-y-3 custom-scrollbar overflow-y-auto max-h-[500px]" id="upcoming-agenda">
+          <div class="text-center py-10 text-slate-400 text-sm">Select a practitioner to view itinerary.</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Patient Details Modal -->
+  <div id="details-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="user" class="w-5 h-5 text-indigo-600"></i> Patient Profile</h3>
+        <button onclick="closeDetailsModal()" class="text-slate-400 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="p-6 space-y-5">
+       
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xl flex items-center justify-center shrink-0" id="modal-avatar">
+            J
+          </div>
+          <div>
+            <h4 class="text-lg font-bold text-slate-900" id="modal-patient-name">Patient Name</h4>
+            <div class="flex flex-col text-sm text-slate-500 mt-1 gap-1">
+              <span class="flex items-center gap-1.5"><i data-lucide="mail" class="w-3.5 h-3.5"></i> <span id="modal-patient-email">email@example.com</span></span>
+              <span class="flex items-center gap-1.5"><i data-lucide="phone" class="w-3.5 h-3.5"></i> <span id="modal-patient-phone">+1234567890</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Appointment Schedule</span>
+            <div class="font-medium text-slate-800 flex items-center gap-2">
+              <i data-lucide="calendar" class="w-4 h-4 text-indigo-500"></i>
+              <span id="modal-apt-date">Oct 24, 2023</span>
+              <span class="text-slate-300">|</span>
+              <i data-lucide="clock" class="w-4 h-4 text-indigo-500"></i>
+              <span id="modal-apt-time">10:00 AM - 11:00 AM</span>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Reason for Visit</span>
+            <p class="text-sm text-slate-700 italic" id="modal-apt-purpose">Patient described symptoms here...</p>
+          </div>
+        </div>
+
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <button onclick="closeDetailsModal()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-md transition-all">Close Details</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decline Request Modal -->
+  <div id="decline-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+      <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="x-circle" class="w-5 h-5 text-red-500"></i> Decline Appointment</h3>
+        <button onclick="closeDeclineModal()" class="text-slate-400 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-sm text-slate-600">Please provide a reason for declining request <strong id="decline-ref-display" class="text-slate-800"></strong>. This will be automatically emailed to the patient.</p>
+        <textarea id="decline-reason" rows="3" class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g., The practitioner is unavailable at this time due to an emergency..."></textarea>
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+        <button onclick="closeDeclineModal()" class="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
+        <button id="btn-submit-decline" onclick="submitDecline()" class="px-4 py-2 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shadow-sm">Decline Request</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    const selectEl = document.getElementById('practitioner-select');
+    const loadingEl = document.getElementById('loading-indicator');
+    const todayAgenda = document.getElementById('today-agenda');
+    const upcomingAgenda = document.getElementById('upcoming-agenda');
+    const welcomeText = document.getElementById('welcome-text');
+
+    let currentAppointments = [];
+    let currentDeclineRef = null;
+
+    // INIT
+    window.onload = function() {
+      fetchPractitioners();
+    };
+
+    function fetchPractitioners() {
+      loadingEl.classList.remove('hidden');
+     
+      if (typeof google !== 'undefined' && google.script) {
+        // Apps Script Environment
+        google.script.run
+          .withSuccessHandler(res => {
+            loadingEl.classList.add('hidden');
+            if(res.success) populateDropdown(res.data);
+          })
+          .getPractitionersList();
+      } else {
+        // Local Preview Fallback
+        setTimeout(() => {
+          loadingEl.classList.add('hidden');
+          populateDropdown(['Dr. John Doe, MD', 'Dr. Sarah Smith, PhD', 'Dr. Emily Chen, DO']);
+        }, 800);
+      }
+    }
+
+    function populateDropdown(list) {
+      list.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    function loadDoctorSchedule() {
+      const docName = selectEl.value;
+      if (!docName) {
+        welcomeText.textContent = 'Welcome, Practitioner';
+        todayAgenda.innerHTML = '<div class="text-center py-10 text-slate-400 text-sm">Select a practitioner to view itinerary.</div>';
+        upcomingAgenda.innerHTML = '<div class="text-center py-10 text-slate-400 text-sm">Select a practitioner to view itinerary.</div>';
+        resetStats();
+        return;
+      }
+
+      welcomeText.textContent = `Welcome, ${docName}`;
+      loadingEl.classList.remove('hidden');
+      todayAgenda.innerHTML = '<div class="text-center py-10 text-slate-400 text-sm">Loading...</div>';
+      upcomingAgenda.innerHTML = '<div class="text-center py-10 text-slate-400 text-sm">Loading...</div>';
+
+      if (typeof google !== 'undefined' && google.script) {
+        // Apps Script Environment
+        google.script.run
+          .withSuccessHandler(res => {
+            loadingEl.classList.add('hidden');
+            if(res.success) {
+              currentAppointments = res.appointments;
+              renderDash(res.appointments);
+            } else {
+              alert("Error loading data.");
+            }
+          })
+          .getDoctorAppointments(docName);
+      } else {
+        // Local Preview Mock Data
+        setTimeout(() => {
+          loadingEl.classList.add('hidden');
+          const mockData = generateMockData(docName);
+          currentAppointments = mockData;
+          renderDash(mockData);
+        }, 1000);
+      }
+    }
+
+    function renderDash(appointments) {
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0); // Normalize to midnight
+      
+      const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+     
+      let todayCount = 0;
+      let upcomingCount = 0;
+      let pendingCount = 0;
+
+      let todayHTML = '';
+      let upcomingHTML = '';
+
+      // We filter out cancelled/declined AND PAST appointments
+      const activeAppts = appointments.filter(a => {
+        if (a.status === 'Declined' || a.status === 'Cancelled') return false;
+        
+        // Filter out past appointments
+        const aptDateObj = new Date(a.aptDate);
+        aptDateObj.setHours(0, 0, 0, 0);
+        return aptDateObj.getTime() >= todayDate.getTime();
+      });
+
+      activeAppts.forEach((appt, index) => {
+        const isToday = appt.aptDate === todayStr;
+        const isPending = appt.status === 'Pending';
+        const isBooked = appt.status === 'Booked';
+
+        if (isToday && isBooked) todayCount++;
+        if (!isToday && isBooked) upcomingCount++;
+        if (isPending) pendingCount++;
+
+        const card = createCardHTML(appt, index);
+
+        if (isToday) {
+          todayHTML += card;
+        } else {
+          upcomingHTML += card;
+        }
+      });
+
+      // Update Stats
+      document.getElementById('stat-today').textContent = todayCount;
+      document.getElementById('stat-upcoming').textContent = upcomingCount;
+      document.getElementById('stat-pending').textContent = pendingCount;
+
+      // Update Lists
+      todayAgenda.innerHTML = todayHTML || '<div class="text-center py-10 text-slate-400 text-sm bg-slate-50 rounded-xl border border-dashed border-slate-200">No appointments scheduled for today.</div>';
+      upcomingAgenda.innerHTML = upcomingHTML || '<div class="text-center py-10 text-slate-400 text-sm bg-slate-50 rounded-xl border border-dashed border-slate-200">No upcoming appointments found.</div>';
+     
+      lucide.createIcons();
+    }
+
+    function createCardHTML(appt, index) {
+      const statusColor = appt.status === 'Booked' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-amber-100 text-amber-700 border-amber-200';
+      const statusIcon = appt.status === 'Booked' ? 'check-circle' : 'clock';
+      const delay = index * 0.05;
+
+      const isPending = appt.status === 'Pending';
+
+      return `
+        <div class="group border border-slate-200 rounded-xl p-4 hover:shadow-md transition-all bg-white animate-fade-in relative overflow-hidden" style="animation-delay: ${delay}s">
+          <div class="absolute left-0 top-0 bottom-0 w-1 ${isPending ? 'bg-amber-400' : 'bg-emerald-500'}"></div>
+         
+          <div class="flex justify-between items-start mb-3 pl-2">
+            <div>
+              <h4 class="font-bold text-slate-800">${appt.time}</h4>
+              <p class="text-xs text-slate-500 font-medium">${appt.aptDate}</p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${statusColor}">
+                <i data-lucide="${statusIcon}" class="w-3 h-3"></i> ${appt.status}
+              </div>
+            </div>
+          </div>
+         
+          <div class="pl-2 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-sm">
+                ${appt.patientName.charAt(0)}
+              </div>
+              <div>
+                <p class="text-sm font-bold text-slate-700">${appt.patientName}</p>
+                <p class="text-xs text-slate-400 truncate max-w-[150px]">${appt.patientPurpose || 'Routine checkup'}</p>
+              </div>
+            </div>
+            <button onclick="openDetailsModal('${appt.refId}')" class="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors tooltip" title="View Details">
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          ${isPending ? `
+            <div class="mt-4 pt-3 pl-2 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button onclick="openDeclineModal('${appt.refId}')" class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors">Decline</button>
+              <button onclick="acceptAppointment('${appt.refId}')" class="px-3 py-1.5 text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-md transition-colors shadow-sm">Accept</button>
+            </div>
+          ` : ''}
+
+        </div>
+      `;
+    }
+
+    // --- Action Functions ---
+
+    function acceptAppointment(refId) {
+      if (!confirm('Are you sure you want to accept this appointment? The patient will be notified.')) return;
+     
+      loadingEl.classList.remove('hidden');
+
+      if (typeof google !== 'undefined' && google.script) {
+        google.script.run
+          .withSuccessHandler(res => {
+            if (res.success) loadDoctorSchedule();
+            else { alert("Error: " + res.message); loadingEl.classList.add('hidden'); }
+          })
+          .processDoctorAction({ referenceId: refId, action: 'accept', reason: '' });
+      } else {
+        // Local preview fallback
+        setTimeout(() => {
+          const appt = currentAppointments.find(a => a.refId === refId);
+          if (appt) appt.status = 'Booked';
+          renderDash(currentAppointments);
+          loadingEl.classList.add('hidden');
+        }, 800);
+      }
+    }
+
+    function openDeclineModal(refId) {
+      currentDeclineRef = refId;
+      document.getElementById('decline-ref-display').textContent = refId;
+      document.getElementById('decline-reason').value = '';
+      document.getElementById('decline-modal').classList.remove('hidden');
+    }
+
+    function closeDeclineModal() {
+      document.getElementById('decline-modal').classList.add('hidden');
+      currentDeclineRef = null;
+    }
+
+    function submitDecline() {
+      const reason = document.getElementById('decline-reason').value.trim();
+      if (!reason) { alert("Please provide a reason."); return; }
+     
+      const btn = document.getElementById('btn-submit-decline');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+      loadingEl.classList.remove('hidden');
+
+      if (typeof google !== 'undefined' && google.script) {
+        google.script.run
+          .withSuccessHandler(res => {
+            btn.disabled = false;
+            btn.textContent = 'Decline Request';
+            closeDeclineModal();
+            if (res.success) loadDoctorSchedule();
+            else { alert("Error: " + res.message); loadingEl.classList.add('hidden'); }
+          })
+          .processDoctorAction({ referenceId: currentDeclineRef, action: 'decline', reason: reason });
+      } else {
+        // Local preview fallback
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = 'Decline Request';
+          closeDeclineModal();
+          const appt = currentAppointments.find(a => a.refId === currentDeclineRef);
+          if (appt) appt.status = 'Declined';
+          renderDash(currentAppointments);
+          loadingEl.classList.add('hidden');
+        }, 800);
+      }
+    }
+
+    // --- Detail Modal Functions ---
+
+    function openDetailsModal(refId) {
+      const appt = currentAppointments.find(a => a.refId === refId);
+      if(!appt) return;
+
+      document.getElementById('modal-avatar').textContent = appt.patientName.charAt(0);
+      document.getElementById('modal-patient-name').textContent = appt.patientName;
+      document.getElementById('modal-patient-email').textContent = appt.patientEmail || 'No email provided';
+      document.getElementById('modal-patient-phone').textContent = appt.patientPhone || 'No phone provided';
+     
+      document.getElementById('modal-apt-date').textContent = appt.aptDate;
+      document.getElementById('modal-apt-time').textContent = appt.time;
+      document.getElementById('modal-apt-purpose').textContent = appt.patientPurpose || 'No specific reason provided by patient.';
+
+      document.getElementById('details-modal').classList.remove('hidden');
+    }
+
+    function closeDetailsModal() {
+      document.getElementById('details-modal').classList.add('hidden');
+    }
+
+    function resetStats() {
+      document.getElementById('stat-today').textContent = '0';
+      document.getElementById('stat-upcoming').textContent = '0';
+      document.getElementById('stat-pending').textContent = '0';
+    }
+
+    // --- MOCK DATA FOR LOCAL PREVIEW ---
+    function generateMockData(docName) {
+      const today = new Date();
+      const tmrw = new Date(today); tmrw.setDate(today.getDate() + 1);
+      const nextWk = new Date(today); nextWk.setDate(today.getDate() + 5);
+
+      const f = (d) => d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+
+      return [
+        { refId: 'REQ-101', patientName: 'Alice Johnson', patientEmail: 'alice@mail.com', patientPhone: '0917-111-2222', aptDate: f(today), time: '09:00 AM - 10:00 AM', status: 'Booked', patientPurpose: 'Follow up on lab results.' },
+        { refId: 'REQ-102', patientName: 'Bob Smith', patientEmail: 'bob@mail.com', patientPhone: '0918-333-4444', aptDate: f(today), time: '11:00 AM - 12:00 PM', status: 'Booked', patientPurpose: 'General Consultation' },
+        { refId: 'REQ-103', patientName: 'Charlie Davis', patientEmail: 'charlie@mail.com', patientPhone: '0919-555-6666', aptDate: f(today), time: '02:00 PM - 03:00 PM', status: 'Pending', patientPurpose: 'Mild fever and cough.' },
+        { refId: 'REQ-104', patientName: 'Diana Prince', patientEmail: 'diana@mail.com', patientPhone: '0920-777-8888', aptDate: f(tmrw), time: '10:00 AM - 11:00 AM', status: 'Booked', patientPurpose: 'Annual physical exam.' },
+        { refId: 'REQ-105', patientName: 'Ethan Hunt', patientEmail: 'ethan@mail.com', patientPhone: '0921-999-0000', aptDate: f(nextWk), time: '01:00 PM - 02:00 PM', status: 'Pending', patientPurpose: 'Knee pain assessment.' },
+      ];
+    }
+  </script>
+</body>
+</html>
