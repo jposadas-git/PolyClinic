@@ -16,7 +16,7 @@
     .slots-container::-webkit-scrollbar { width: 6px; }
     .slots-container::-webkit-scrollbar-track { background: #f1f5f9; }
     .slots-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-   
+    
     .calendar-day {
       aspect-ratio: 1 / 1;
       min-height: 45px;
@@ -25,12 +25,12 @@
       justify-content: center;
       transition: all 0.2s ease;
     }
-   
+    
     .modal-backdrop {
       background-color: rgba(15, 23, 42, 0.6);
       backdrop-filter: blur(4px);
     }
-   
+    
     @keyframes slideUp {
       from { transform: translateY(20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
@@ -40,7 +40,6 @@
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col">
   
-  <!-- Top Navigation -->
   <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -59,13 +58,10 @@
     </div>
   </nav>
   
-  <!-- Main Container -->
   <main class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 lg:p-8 space-y-6">
-   
-    <!-- Header/Filter Section -->
+    
     <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row gap-4 items-end">
       
-      <!-- NEW: Location Filter -->
       <div class="flex-1 w-full space-y-1.5">
         <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Location</label>
         <select id="filter-location" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
@@ -92,10 +88,8 @@
       </button>
     </div>
   
-    <!-- Layout Grid: Calendar and Slots side-by-side on desktop, stacked on mobile -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-     
-      <!-- Left: Calendar Panel -->
+      
       <div class="lg:col-span-7 xl:col-span-8 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
         <div class="flex items-center justify-between mb-8">
           <h2 id="current-month-year" class="text-xl font-bold text-slate-900"></h2>
@@ -104,8 +98,7 @@
             <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
           </div>
         </div>
-       
-        <!-- Days of Week Header -->
+        
         <div class="grid grid-cols-7 gap-2 mb-4 text-center">
           <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sun</div>
           <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mon</div>
@@ -115,12 +108,10 @@
           <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fri</div>
           <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sat</div>
         </div>
-       
-        <!-- Days Grid -->
+        
         <div id="calendar-grid" class="grid grid-cols-7 gap-2"></div>
       </div>
   
-      <!-- Right: Available Slots Panel -->
       <div class="lg:col-span-5 xl:col-span-4 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col max-h-[700px]">
         <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-xl">
           <div>
@@ -131,16 +122,14 @@
             <i data-lucide="clock-3" class="w-5 h-5"></i>
           </div>
         </div>
-       
+        
         <div id="slots-container" class="flex-1 overflow-y-auto p-4 space-y-3 slots-container">
-          <!-- Slots will be injected here -->
-        </div>
+          </div>
       </div>
   
     </div>
   </main>
   
-  <!-- Booking Modal -->
   <div id="booking-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
       <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -162,14 +151,14 @@
             </div>
           </div>
         </div>
-       
+        
         <div class="space-y-3">
           <div class="flex gap-3">
             <input type="text" id="first-name" required placeholder="First Name" class="w-1/2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
             <input type="text" id="last-name" required placeholder="Last Name" class="w-1/2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
           </div>
-          <input type="email" id="email-address" required placeholder="Preferred Email Address" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all" required>
-          <input type="tel" id="contact-number" required placeholder="Contact Number (e.g. 0917...)" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all" required>
+          <input type="email" id="email-address" required placeholder="Preferred Email Address" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
+          <input type="tel" id="contact-number" required placeholder="Contact Number (e.g. 0917...)" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
           <textarea id="purpose" rows="3" required placeholder="Reason for consultation..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all resize-none"></textarea>
         </div>
   
@@ -181,7 +170,6 @@
     </div>
   </div>
   
-  <!-- Status Notification -->
   <div id="status-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 modal-backdrop">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-8 text-center animate-slide-up">
       <div id="status-icon-container" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"></div>
@@ -198,7 +186,7 @@
     // Standardize dates to start at midnight for accurate comparisons
     let currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-   
+    
     let selectedDate = new Date();
     selectedDate.setHours(0, 0, 0, 0);
   
@@ -336,7 +324,7 @@
   
       const firstDay = new Date(year, month, 1).getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-     
+      
       const filtered = getFilteredData();
       const datesWithSlots = new Set(filtered.map(s => s.date));
       const today = new Date();
@@ -350,7 +338,7 @@
         const isSelected = d.toDateString() === selectedDate.toDateString();
         const hasSlots = datesWithSlots.has(dateStr);
         const isPastDate = d < today;
-       
+        
         const cell = document.createElement('button');
         if (isPastDate) {
           cell.disabled = true;
@@ -371,82 +359,109 @@
     }
   
     function renderSlots() {
-        const dateStr = getFormattedDateString(selectedDate);
-        selectedDateDisplay.textContent = selectedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-       
-        const rawFiltered = getFilteredData().filter(s => s.date === dateStr);
-        slotsContainer.innerHTML = '';
-       
-        const now = new Date();
-       
-        // Filter out schedules where the date and time have already passed
-        const filtered = rawFiltered.filter(slot => {
-            const slotDateTime = new Date(`${slot.date} ${slot.start_time}`);
-            return slotDateTime >= now;
-        });
+      const dateStr = getFormattedDateString(selectedDate);
+      selectedDateDisplay.textContent = selectedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      
+      const rawFiltered = getFilteredData().filter(s => s.date === dateStr);
+      slotsContainer.innerHTML = '';
+      
+      const now = new Date();
+      
+      // Filter out schedules where the date and time have already passed
+      const filtered = rawFiltered.filter(slot => {
+        const slotDateTime = new Date(`${slot.date} ${slot.start_time}`);
+        return slotDateTime >= now;
+      });
   
-        if (filtered.length === 0) {
-            slotSummary.textContent = "0 slots available (Past Time/Date)";
-            slotsContainer.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-16 opacity-40">
-                    <i data-lucide="calendar-off" class="w-12 h-12 mb-3"></i>
-                    <p class="text-sm font-medium">No future slots for this date</p>
-                </div>`;
-            lucide.createIcons();
-            return;
+      if (filtered.length === 0) {
+        slotSummary.textContent = "0 slots available (Past Time/Date)";
+        slotsContainer.innerHTML = `
+          <div class="flex flex-col items-center justify-center py-16 opacity-40">
+            <i data-lucide="calendar-off" class="w-12 h-12 mb-3"></i>
+            <p class="text-sm font-medium">No future slots for this date</p>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+  
+      const availCount = filtered.filter(s => s.status.toLowerCase() === 'available' || s.status.toLowerCase() === 'pending').length;
+      slotSummary.textContent = `${availCount} of ${filtered.length} slots available for booking`;
+  
+      filtered.forEach(slot => {
+        const statusLower = slot.status.toLowerCase();
+        const isAvailable = statusLower === 'available';
+        const isPending = statusLower === 'pending';
+        const canBook = isAvailable || isPending;
+        
+        const card = document.createElement('div');
+        
+        // Define dynamic styling based on availability
+        let cardStyle = '';
+        if (isAvailable) {
+          cardStyle = 'border-slate-200 hover:border-teal-400 hover:shadow-md cursor-pointer bg-white';
+        } else if (isPending) {
+          cardStyle = 'border-amber-300 bg-amber-50 hover:bg-amber-100 cursor-pointer';
+        } else {
+          cardStyle = 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed';
+        }
+
+        card.className = `group p-4 border rounded-xl flex flex-col gap-2 transition-all ${cardStyle}`;
+        
+        if (canBook) {
+          card.onclick = () => {
+            if (isPending) {
+              alert("Notice: There is a request sent earlier than yours for this time slot. You may still submit your request, but please wait for confirmation.");
+            }
+            currentBookingSlot = slot;
+            document.getElementById('modal-doctor-name').textContent = slot.practitionerName;
+            document.getElementById('modal-datetime').textContent = `${slot.date} @ ${slot.timeSlot}`;
+            document.getElementById('modal-location').textContent = slot.location; 
+            document.getElementById('modal-address').textContent = slot.locAddress || ''; 
+            document.getElementById('booking-modal').classList.remove('hidden');
+          };
         }
   
-        const availCount = filtered.filter(s => s.status.toLowerCase() === 'available').length;
-        slotSummary.textContent = `${availCount} of ${filtered.length} slots available`;
-  
-        filtered.forEach(slot => {
-            const isAvailable = slot.status.toLowerCase() === 'available';
-            const card = document.createElement('div');
-           
-            card.className = `group p-4 border rounded-xl flex flex-col gap-2 transition-all ${
-                isAvailable
-                ? 'border-slate-200 hover:border-teal-400 hover:shadow-md cursor-pointer bg-white'
-                : 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed'
-            }`;
-           
-            if (isAvailable) {
-                card.onclick = () => {
-                    currentBookingSlot = slot;
-                    document.getElementById('modal-doctor-name').textContent = slot.practitionerName;
-                    document.getElementById('modal-datetime').textContent = `${slot.date} @ ${slot.timeSlot}`;
-                    document.getElementById('modal-location').textContent = slot.location; 
-                    document.getElementById('modal-address').textContent = slot.locAddress || ''; 
-                    document.getElementById('booking-modal').classList.remove('hidden');
-                };
-            }
-  
-            card.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <span class="font-bold text-slate-800">${slot.timeSlot}</span>
-                    <span class="text-[10px] uppercase font-bold px-2 py-1 rounded-md ${
-                        isAvailable ? 'bg-teal-100 text-teal-700' : 'bg-slate-200 text-slate-500'
-                    }">${slot.status}</span>
-                </div>
-                <div class="flex items-start gap-2 mt-1">
-                    <div class="w-6 h-6 mt-0.5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
-                        ${slot.practitionerName.split(' ').pop().charAt(0)}
-                    </div>
-                    <div class="text-xs flex flex-col gap-1 items-start w-full">
-                        <p class="font-semibold text-slate-700 leading-tight">${slot.practitionerName}</p>
-                        <p class="text-slate-400 text-[10px]">${slot.lob}</p>
-                        
-                        <div class="mt-1 w-full flex flex-col gap-0.5 px-2 py-1.5 rounded-md bg-teal-50 border border-teal-100">
-                             <span class="inline-flex items-center gap-1 text-teal-700 text-[10px] font-bold">
-                                <i data-lucide="map-pin" class="w-3 h-3"></i> ${slot.location}
-                             </span>
-                             ${slot.locAddress ? `<span class="text-[9px] text-teal-600/70 ml-4 truncate" title="${slot.locAddress}">${slot.locAddress}</span>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-            slotsContainer.appendChild(card);
-        });
-        lucide.createIcons();
+        // Define badge rendering
+        let badgeClass = '';
+        let badgeText = slot.status;
+        let pendingWarningHTML = '';
+        
+        if (isAvailable) {
+          badgeClass = 'bg-teal-100 text-teal-700';
+        } else if (isPending) {
+          badgeClass = 'bg-amber-200 text-amber-800';
+          pendingWarningHTML = `<div class="text-[10px] mt-1 mb-1 font-semibold text-amber-700 leading-tight">Other patient already filed & waiting for confirmation</div>`;
+        } else {
+          badgeClass = 'bg-slate-200 text-slate-500';
+          badgeText = 'Booked'; // Force to booked visually if not available/pending
+        }
+
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <span class="font-bold text-slate-800">${slot.timeSlot}</span>
+            <span class="text-[10px] uppercase font-bold px-2 py-1 rounded-md ${badgeClass}">${badgeText}</span>
+          </div>
+          ${pendingWarningHTML}
+          <div class="flex items-start gap-2 mt-1">
+            <div class="w-6 h-6 mt-0.5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
+              ${slot.practitionerName.split(' ').pop().charAt(0)}
+            </div>
+            <div class="text-xs flex flex-col gap-1 items-start w-full">
+              <p class="font-semibold text-slate-700 leading-tight">${slot.practitionerName}</p>
+              <p class="text-slate-400 text-[10px]">${slot.lob}</p>
+              
+              <div class="mt-1 w-full flex flex-col gap-0.5 px-2 py-1.5 rounded-md bg-teal-50 border border-teal-100">
+                 <span class="inline-flex items-center gap-1 text-teal-700 text-[10px] font-bold">
+                  <i data-lucide="map-pin" class="w-3 h-3"></i> ${slot.location}
+                 </span>
+                 ${slot.locAddress ? `<span class="text-[9px] text-teal-600/70 ml-4 truncate" title="${slot.locAddress}">${slot.locAddress}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+        slotsContainer.appendChild(card);
+      });
+      lucide.createIcons();
     }
   
     function closeBookingModal() { document.getElementById('booking-modal').classList.add('hidden'); }
@@ -481,7 +496,7 @@
           btn.disabled = false;
           btn.textContent = originalText;
           closeBookingModal();
-         
+          
           if (res.success) {
             let message = `Your request has been submitted. Reference ID: <strong class="text-teal-700">${res.referenceId}</strong>. Please wait for an email and/or SMS confirmation.`;
             let statusType = 'success';
@@ -510,7 +525,7 @@
     function showStatus(type, title, message) {
       const container = document.getElementById('status-icon-container');
       const btn = document.getElementById('status-btn');
-     
+      
       if (type === 'success') {
         container.className = "w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-5";
         container.innerHTML = '<i data-lucide="check-circle-2" class="w-10 h-10"></i>';
@@ -527,7 +542,7 @@
         btn.className = "w-full py-3 rounded-xl font-bold text-white text-sm bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-100 transition-all";
         btn.textContent = "Try Again";
       }
-     
+      
       document.getElementById('status-title').textContent = title;
       document.getElementById('status-message').innerHTML = message;
       document.getElementById('status-modal').classList.remove('hidden');
@@ -535,7 +550,7 @@
     }
   
     function changeMonth(n) { currentDate.setMonth(currentDate.getMonth() + n); renderCalendar(); }
-   
+    
     function goToToday() {
       currentDate = new Date();
       currentDate.setHours(0, 0, 0, 0);
