@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PolyClinic Appointment Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f8fafc;
+    }
+    /* Custom Scrollbar for Slots */
+    .slots-container::-webkit-scrollbar { width: 6px; }
+    .slots-container::-webkit-scrollbar-track { background: #f1f5f9; }
+    .slots-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+   
+    .calendar-day {
+      aspect-ratio: 1 / 1;
+      min-height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+   
+    .modal-backdrop {
+      background-color: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+    }
+   
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+  </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+  
+  <!-- Top Navigation -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-teal-600 p-2 rounded-lg text-white">
+          <i data-lucide="calendar" class="w-5 h-5"></i>
+        </div>
+        <span class="text-lg font-bold text-slate-900 tracking-tight">PolyClinic <span class="text-teal-600 font-medium">Scheduler</span></span>
+      </div>
+      <div id="loading-indicator" class="flex items-center gap-2 text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full font-medium text-xs border border-teal-100 hidden">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+        </span>
+        Connecting to Database...
+      </div>
+    </div>
+  </nav>
+  
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 lg:p-8 space-y-6">
+   
+    <!-- Header/Filter Section -->
+    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row gap-4 items-end">
+      
+      <!-- NEW: Location Filter -->
+      <div class="flex-1 w-full space-y-1.5">
+        <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Location</label>
+        <select id="filter-location" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
+          <option value="">All Locations</option>
+        </select>
+      </div>
+
+      <div class="flex-1 w-full space-y-1.5">
+        <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">LOB (Service)</label>
+        <select id="filter-specialty" onchange="handleSpecialtyChange()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
+          <option value="">All Services</option>
+        </select>
+      </div>
+      
+      <div class="flex-1 w-full space-y-1.5">
+        <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Attending Practitioner</label>
+        <select id="filter-doctor" onchange="handleDoctorChange()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
+          <option value="">All Practitioners</option>
+        </select>
+      </div>
+      
+      <button onclick="goToToday()" class="whitespace-nowrap px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-lg border border-slate-200 flex items-center gap-2 transition-colors">
+        <i data-lucide="target" class="w-4 h-4"></i> Today
+      </button>
+    </div>
+  
+    <!-- Layout Grid: Calendar and Slots side-by-side on desktop, stacked on mobile -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+     
+      <!-- Left: Calendar Panel -->
+      <div class="lg:col-span-7 xl:col-span-8 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-8">
+          <h2 id="current-month-year" class="text-xl font-bold text-slate-900"></h2>
+          <div class="flex gap-2">
+            <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+            <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+          </div>
+        </div>
+       
+        <!-- Days of Week Header -->
+        <div class="grid grid-cols-7 gap-2 mb-4 text-center">
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sun</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mon</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tue</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wed</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thu</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fri</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sat</div>
+        </div>
+       
+        <!-- Days Grid -->
+        <div id="calendar-grid" class="grid grid-cols-7 gap-2"></div>
+      </div>
+  
+      <!-- Right: Available Slots Panel -->
+      <div class="lg:col-span-5 xl:col-span-4 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col max-h-[700px]">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-xl">
+          <div>
+            <h3 class="font-bold text-slate-900" id="selected-date-display">Select Date</h3>
+            <p class="text-xs text-slate-500 font-medium mt-0.5" id="slot-summary">Checking availability...</p>
+          </div>
+          <div class="bg-teal-100 p-2 rounded-lg text-teal-700">
+            <i data-lucide="clock-3" class="w-5 h-5"></i>
+          </div>
+        </div>
+       
+        <div id="slots-container" class="flex-1 overflow-y-auto p-4 space-y-3 slots-container">
+          <!-- Slots will be injected here -->
+        </div>
+      </div>
+  
+    </div>
+  </main>
+  
+  <!-- Booking Modal -->
+  <div id="booking-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <h3 class="font-bold text-slate-800">Complete Booking</h3>
+        <button onclick="closeBookingModal()" class="text-slate-400 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form id="booking-form" onsubmit="submitBooking(event)" class="p-6 space-y-4">
+        <div class="bg-teal-50/50 p-4 rounded-xl border border-teal-100 space-y-1">
+          <div class="font-bold text-teal-900" id="modal-doctor-name"></div>
+          <div class="text-teal-700 text-xs font-medium flex items-center gap-1.5">
+            <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
+            <span id="modal-datetime"></span>
+          </div>
+          <div class="text-teal-700 text-xs font-medium flex items-start gap-1.5 mt-1">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i>
+            <div>
+               <span id="modal-location" class="font-bold block"></span>
+               <span id="modal-address" class="text-teal-600/80 font-normal leading-tight"></span>
+            </div>
+          </div>
+        </div>
+       
+        <div class="space-y-3">
+          <div class="flex gap-3">
+            <input type="text" id="first-name" required placeholder="First Name" class="w-1/2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
+            <input type="text" id="last-name" required placeholder="Last Name" class="w-1/2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all">
+          </div>
+          <input type="email" id="email-address" required placeholder="Preferred Email Address" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all" required>
+          <input type="tel" id="contact-number" required placeholder="Contact Number (e.g. 0917...)" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all" required>
+          <textarea id="purpose" rows="3" required placeholder="Reason for consultation..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all resize-none"></textarea>
+        </div>
+  
+        <div class="pt-4 flex gap-3">
+          <button type="button" onclick="closeBookingModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200 transition-colors">Cancel</button>
+          <button type="submit" id="submit-booking-btn" class="flex-1 py-3 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 shadow-md shadow-teal-200 transition-all">Confirm Appointment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Status Notification -->
+  <div id="status-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-8 text-center animate-slide-up">
+      <div id="status-icon-container" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"></div>
+      <h3 id="status-title" class="text-xl font-bold text-slate-900 mb-2"></h3>
+      <p id="status-message" class="text-sm text-slate-500 mb-8 leading-relaxed"></p>
+      <button onclick="closeStatusModal()" id="status-btn" class="w-full py-3 rounded-xl font-bold text-white text-sm shadow-lg transition-all"></button>
+    </div>
+  </div>
+  
+  <script>
+    // Initialize Icons
+    lucide.createIcons();
+  
+    // Standardize dates to start at midnight for accurate comparisons
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+   
+    let selectedDate = new Date();
+    selectedDate.setHours(0, 0, 0, 0);
+  
+    let allSlotsData = [];
+    let allDoctorsList = [];
+    let currentBookingSlot = null;
+  
+    const calendarGrid = document.getElementById('calendar-grid');
+    const currentMonthYear = document.getElementById('current-month-year');
+    const selectedDateDisplay = document.getElementById('selected-date-display');
+    const slotsContainer = document.getElementById('slots-container');
+    const slotSummary = document.getElementById('slot-summary');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    
+    const filterSpecialty = document.getElementById('filter-specialty');
+    const filterDoctor = document.getElementById('filter-doctor');
+    const filterLocation = document.getElementById('filter-location'); 
+  
+    function loadData() {
+      loadingIndicator.classList.remove('hidden');
+      google.script.run
+        .withSuccessHandler(res => {
+          loadingIndicator.classList.add('hidden');
+          if (res.success) {
+            allSlotsData = res.data;
+            allDoctorsList = res.doctors;
+            populateSpecialties(res.specialties);
+            populateDoctors(res.doctors);
+            populateLocations(res.locations);
+            
+            renderCalendar();
+            renderSlots();
+          } else {
+            showStatus('error', 'Data Error', res.error || 'Failed to parse database records.');
+          }
+        })
+        .withFailureHandler(err => {
+          loadingIndicator.classList.add('hidden');
+          showStatus('error', 'Connection Error', 'Could not connect to the Google Sheets database.');
+        })
+        .getSlotsData();
+    }
+  
+    function getFormattedDateString(dateObj) {
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+  
+    function populateLocations(locs) {
+      if (!locs) return;
+      const current = filterLocation.value;
+      filterLocation.innerHTML = '<option value="">All Locations</option>';
+      
+      const uniqueLocs = [];
+      const seenNames = new Set();
+      
+      locs.forEach(l => {
+        if (!seenNames.has(l.name)) {
+          seenNames.add(l.name);
+          uniqueLocs.push(l);
+          filterLocation.innerHTML += `<option value="${l.id}">${l.name}</option>`;
+        }
+      });
+      
+      if (uniqueLocs.some(l => l.id === current)) {
+        filterLocation.value = current;
+      } else {
+        filterLocation.value = "";
+      }
+    }
+
+    function populateSpecialties(specs) {
+      const current = filterSpecialty.value;
+      filterSpecialty.innerHTML = '<option value="">All Services</option>';
+      specs.forEach(s => filterSpecialty.innerHTML += `<option value="${s}">${s}</option>`);
+      filterSpecialty.value = current;
+    }
+  
+    function populateDoctors(docs) {
+      const current = filterDoctor.value;
+      filterDoctor.innerHTML = '<option value="">All Practitioners</option>';
+      docs.forEach(d => filterDoctor.innerHTML += `<option value="${d}">${d}</option>`);
+      if (docs.includes(current)) {
+        filterDoctor.value = current;
+      } else {
+        filterDoctor.value = "";
+      }
+    }
+  
+    function handleSpecialtyChange() {
+      const selectedLob = filterSpecialty.value;
+      if (!selectedLob) {
+        populateDoctors(allDoctorsList);
+      } else {
+        const validDoctors = new Set();
+        allSlotsData.forEach(slot => { if (slot.lob === selectedLob) validDoctors.add(slot.practitionerName); });
+        populateDoctors(Array.from(validDoctors).sort());
+      }
+      handleFilterChange();
+    }
+  
+    function handleDoctorChange() {
+      const selectedDoc = filterDoctor.value;
+      if (selectedDoc) {
+        const docSlot = allSlotsData.find(slot => slot.practitionerName === selectedDoc);
+        if (docSlot && docSlot.lob) filterSpecialty.value = docSlot.lob;
+      }
+      handleFilterChange();
+    }
+  
+    function handleFilterChange() { renderCalendar(); renderSlots(); }
+  
+    function getFilteredData() {
+      const spec = filterSpecialty.value;
+      const doc = filterDoctor.value;
+      const loc = filterLocation.value; 
+      
+      return allSlotsData.filter(s => {
+        const matchSpec = !spec || s.lob === spec;
+        const matchDoc = !doc || s.practitionerName === doc;
+        const matchLoc = !loc || s.loc_id === loc; 
+        
+        return matchSpec && matchDoc && matchLoc;
+      });
+    }
+  
+    function renderCalendar() {
+      calendarGrid.innerHTML = '';
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      currentMonthYear.textContent = `${monthNames[month]} ${year}`;
+  
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+     
+      const filtered = getFilteredData();
+      const datesWithSlots = new Set(filtered.map(s => s.date));
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+  
+      for (let i = 0; i < firstDay; i++) calendarGrid.appendChild(document.createElement('div'));
+  
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const dateStr = getFormattedDateString(d);
+        const isSelected = d.toDateString() === selectedDate.toDateString();
+        const hasSlots = datesWithSlots.has(dateStr);
+        const isPastDate = d < today;
+       
+        const cell = document.createElement('button');
+        if (isPastDate) {
+          cell.disabled = true;
+          cell.className = `calendar-day rounded-xl border text-sm font-semibold relative bg-slate-50 text-slate-400 border-slate-100 opacity-50 cursor-not-allowed`;
+        } else {
+          cell.onclick = () => { selectedDate = d; renderCalendar(); renderSlots(); };
+          let bgClass = isSelected ? 'bg-teal-600 text-white shadow-md shadow-teal-100' : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-100 cursor-pointer';
+          cell.className = `calendar-day rounded-xl border text-sm font-semibold relative transition-all ${bgClass}`;
+        }
+        cell.innerHTML = `<span>${day}</span>`;
+        if (hasSlots) {
+          const indicator = document.createElement('div');
+          indicator.className = `absolute bottom-2 w-1 h-1 rounded-full ${isSelected && !isPastDate ? 'bg-white' : (isPastDate ? 'bg-slate-300' : 'bg-teal-500')}`;
+          cell.appendChild(indicator);
+        }
+        calendarGrid.appendChild(cell);
+      }
+    }
+  
+    function renderSlots() {
+        const dateStr = getFormattedDateString(selectedDate);
+        selectedDateDisplay.textContent = selectedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+       
+        const rawFiltered = getFilteredData().filter(s => s.date === dateStr);
+        slotsContainer.innerHTML = '';
+       
+        const now = new Date();
+       
+        // Filter out schedules where the date and time have already passed
+        const filtered = rawFiltered.filter(slot => {
+            const slotDateTime = new Date(`${slot.date} ${slot.start_time}`);
+            return slotDateTime >= now;
+        });
+  
+        if (filtered.length === 0) {
+            slotSummary.textContent = "0 slots available (Past Time/Date)";
+            slotsContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-16 opacity-40">
+                    <i data-lucide="calendar-off" class="w-12 h-12 mb-3"></i>
+                    <p class="text-sm font-medium">No future slots for this date</p>
+                </div>`;
+            lucide.createIcons();
+            return;
+        }
+  
+        const availCount = filtered.filter(s => s.status.toLowerCase() === 'available').length;
+        slotSummary.textContent = `${availCount} of ${filtered.length} slots available`;
+  
+        filtered.forEach(slot => {
+            const isAvailable = slot.status.toLowerCase() === 'available';
+            const card = document.createElement('div');
+           
+            card.className = `group p-4 border rounded-xl flex flex-col gap-2 transition-all ${
+                isAvailable
+                ? 'border-slate-200 hover:border-teal-400 hover:shadow-md cursor-pointer bg-white'
+                : 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed'
+            }`;
+           
+            if (isAvailable) {
+                card.onclick = () => {
+                    currentBookingSlot = slot;
+                    document.getElementById('modal-doctor-name').textContent = slot.practitionerName;
+                    document.getElementById('modal-datetime').textContent = `${slot.date} @ ${slot.timeSlot}`;
+                    document.getElementById('modal-location').textContent = slot.location; 
+                    document.getElementById('modal-address').textContent = slot.locAddress || ''; 
+                    document.getElementById('booking-modal').classList.remove('hidden');
+                };
+            }
+  
+            card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <span class="font-bold text-slate-800">${slot.timeSlot}</span>
+                    <span class="text-[10px] uppercase font-bold px-2 py-1 rounded-md ${
+                        isAvailable ? 'bg-teal-100 text-teal-700' : 'bg-slate-200 text-slate-500'
+                    }">${slot.status}</span>
+                </div>
+                <div class="flex items-start gap-2 mt-1">
+                    <div class="w-6 h-6 mt-0.5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                        ${slot.practitionerName.split(' ').pop().charAt(0)}
+                    </div>
+                    <div class="text-xs flex flex-col gap-1 items-start w-full">
+                        <p class="font-semibold text-slate-700 leading-tight">${slot.practitionerName}</p>
+                        <p class="text-slate-400 text-[10px]">${slot.lob}</p>
+                        
+                        <div class="mt-1 w-full flex flex-col gap-0.5 px-2 py-1.5 rounded-md bg-teal-50 border border-teal-100">
+                             <span class="inline-flex items-center gap-1 text-teal-700 text-[10px] font-bold">
+                                <i data-lucide="map-pin" class="w-3 h-3"></i> ${slot.location}
+                             </span>
+                             ${slot.locAddress ? `<span class="text-[9px] text-teal-600/70 ml-4 truncate" title="${slot.locAddress}">${slot.locAddress}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            slotsContainer.appendChild(card);
+        });
+        lucide.createIcons();
+    }
+  
+    function closeBookingModal() { document.getElementById('booking-modal').classList.add('hidden'); }
+    function closeStatusModal() { document.getElementById('status-modal').classList.add('hidden'); }
+  
+    function submitBooking(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submit-booking-btn');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+  
+      const payload = {
+        date: currentBookingSlot.date,
+        timeSlot: currentBookingSlot.timeSlot,
+        start_time: currentBookingSlot.start_time,
+        end_time: currentBookingSlot.end_time,
+        practitionerId: currentBookingSlot.practitionerId,
+        practitionerName: currentBookingSlot.practitionerName,
+        lob: currentBookingSlot.lob,
+        loc_id: currentBookingSlot.loc_id,
+        location: currentBookingSlot.location,
+        firstName: document.getElementById('first-name').value,
+        lastName: document.getElementById('last-name').value,
+        emailAddress: document.getElementById('email-address').value,
+        contactNumber: document.getElementById('contact-number').value,
+        purpose: document.getElementById('purpose').value
+      };
+  
+      google.script.run
+        .withSuccessHandler(res => {
+          btn.disabled = false;
+          btn.textContent = originalText;
+          closeBookingModal();
+         
+          if (res.success) {
+            let message = `Your request has been submitted. Reference ID: <strong class="text-teal-700">${res.referenceId}</strong>. Please wait for an email and/or SMS confirmation.`;
+            let statusType = 'success';
+            if (res.isOverlapping) {
+              statusType = 'warning';
+              message += `<br><br><div class="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-xs text-left font-medium">
+                <i data-lucide="alert-triangle" class="w-4 h-4 inline-block mb-0.5 mr-1"></i>
+                <strong>Warning:</strong> Another patient has already requested this exact schedule first. Your request has been recorded and placed on the waitlist.
+              </div>`;
+            }
+            showStatus(statusType, 'Request Submitted', message);
+            loadData();
+          } else {
+            showStatus('error', 'Booking Failed', res.message || 'Something went wrong. Please try again.');
+          }
+        })
+        .withFailureHandler(err => {
+          btn.disabled = false;
+          btn.textContent = originalText;
+          closeBookingModal();
+          showStatus('error', 'Connection Error', 'Could not connect to the Google Sheets database to finalize the booking.');
+        })
+        .bookSlot(payload);
+    }
+  
+    function showStatus(type, title, message) {
+      const container = document.getElementById('status-icon-container');
+      const btn = document.getElementById('status-btn');
+     
+      if (type === 'success') {
+        container.className = "w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-5";
+        container.innerHTML = '<i data-lucide="check-circle-2" class="w-10 h-10"></i>';
+        btn.className = "w-full py-3 rounded-xl font-bold text-white text-sm bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all";
+        btn.textContent = "Great, thanks!";
+      } else if (type === 'warning') {
+        container.className = "w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-5";
+        container.innerHTML = '<i data-lucide="alert-triangle" class="w-10 h-10"></i>';
+        btn.className = "w-full py-3 rounded-xl font-bold text-white text-sm bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-100 transition-all";
+        btn.textContent = "I Understand";
+      } else {
+        container.className = "w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-5";
+        container.innerHTML = '<i data-lucide="alert-circle" class="w-10 h-10"></i>';
+        btn.className = "w-full py-3 rounded-xl font-bold text-white text-sm bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-100 transition-all";
+        btn.textContent = "Try Again";
+      }
+     
+      document.getElementById('status-title').textContent = title;
+      document.getElementById('status-message').innerHTML = message;
+      document.getElementById('status-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+  
+    function changeMonth(n) { currentDate.setMonth(currentDate.getMonth() + n); renderCalendar(); }
+   
+    function goToToday() {
+      currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0);
+      selectedDate = new Date();
+      selectedDate.setHours(0, 0, 0, 0);
+      renderCalendar();
+      renderSlots();
+    }
+  
+    window.onload = loadData;
+  </script>
+</body>
+</html>
