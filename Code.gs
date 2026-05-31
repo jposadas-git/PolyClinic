@@ -188,6 +188,8 @@ function getSlotsData() {
     apptData.shift();
 
     const bookedSet = new Set();
+    const pendingSet = new Set(); // NEW: Create a separate set for pending slots
+
     apptData.forEach(row => {
       if (!row[4]) return; 
       let dateStr = row[4] instanceof Date ? Utilities.formatDate(row[4], Session.getScriptTimeZone(), 'yyyy-MM-dd') : row[4];
@@ -196,7 +198,14 @@ function getSlotsData() {
       const status = row[9]; 
 
       if (status !== 'Declined' && status !== 'Cancelled' && status !== 'Rejected') {
-        bookedSet.add(`${dateStr}|${startTime}|${pracName}`);
+        const slotKey = `${pracName}_${dateStr}_${startTime}`;
+        
+        // MODIFICATION: Differentiate between Pending and actual Booked/Approved
+        if (status === 'Pending') {
+          pendingSet.add(slotKey);
+        } else {
+          bookedSet.add(slotKey);
+        }
       }
     });
 
@@ -256,7 +265,9 @@ function getSlotsData() {
       data: slots, 
       specialties: Array.from(lobs).sort(), 
       doctors: Array.from(pracNames).sort(),
-      locations: locList 
+      locations: locList, 
+      booked: Array.from(bookedSet),
+      pending: Array.from(pendingSet) // NEW: Pass pending slots to the frontend
     };
   } catch (error) {
     return { success: false, error: error.toString() };
